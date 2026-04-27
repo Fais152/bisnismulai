@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+
+enum Role {
+  user
+  consultant
+  admin
+}
+
+enum ThemePreference {
+  dark
+  light
+}
+
+enum PhaseStatus {
+  locked
+  active
+  completed
+}
+
+enum AlertType {
+  info
+  warning
+  danger
+}
+
+enum SessionStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+model User {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                   String   @unique @db.VarChar(255)
+  full_name               String   @db.VarChar(100)
+  avatar_url              String?
+  role                    Role     @default(user)
+  theme_preference        ThemePreference @default(dark)
+  onboarding_completed    Boolean  @default(false)
+  business_type           String?  @db.VarChar(50)
+  business_stage          String?  @db.VarChar(50)
+  initial_capital         BigInt?
+  target_monthly_revenue  BigInt?
+  current_phase           Int      @default(1) @db.SmallInt
+  health_score            Int?     @db.SmallInt
+  created_at              DateTime @default(now()) @db.Timestamptz
+  updated_at              DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  phase_progress        PhaseProgress[]
+  tool_data             ToolData[]
+  tool_data_history     ToolDataHistory[]
+  advisory_alerts       AdvisoryAlert[]
+  consultant            Consultant?
+  consultation_sessions ConsultationSession[]
+  monthly_diagnoses     MonthlyDiagnosis[]
+
+  @@map("users")
+}
+
+model PhaseProgress {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String   @db.Uuid
+  phase_number    Int      @db.SmallInt
+  status          PhaseStatus @default(locked)
+  checklist_items Json     @default("[]")
+  completed_at    DateTime? @db.Timestamptz
+  created_at      DateTime @default(now()) @db.Timestamptz
+
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("phase_progress")
+}
+
+model ToolData {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  tool_slug  String   @db.VarChar(50)
+  data       Json
+  version    Int      @default(1) @db.SmallInt
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  user              User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  tool_data_history ToolDataHistory[]
+
+  @@unique([user_id, tool_slug])
+  @@map("tool_data")
+}
+
+model ToolDataHistory {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tool_data_id  String   @db.Uuid
+  user_id       String   @db.Uuid
+  tool_slug     String   @db.VarChar(50)
+  data_snapshot Json
+  changed_at    DateTime @default(now()) @db.Timestamptz
+
+  tool_data     ToolData @relation(fields: [tool_data_id], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("tool_data_history")
+}
+
+model AdvisoryAlert {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String    @db.Uuid
+  type           AlertType
+  trigger_source String    @db.VarChar(50)
+  title          String    @db.VarChar(200)
+  message        String
+  action_url     String?   @db.VarChar(255)
+  dismissed      Boolean   @default(false)
+  created_at     DateTime  @default(now()) @db.Timestamptz
+
+  user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("advisory_alerts")
+}
+
+model Consultant {
+  id               String   @id @db.Uuid // PK and FK to users.id
+  bio              String?
+  specialization   String[]
+  years_experience Int      @db.SmallInt
+  is_available     Boolean  @default(true)
+  created_at       DateTime @default(now()) @db.Timestamptz
+
+  user             User     @relation(fields: [id], references: [id], onDelete: Cascade)
+  slots            ConsultationSlot[]
+  sessions         ConsultationSession[]
+
+  @@map("consultants")
+}
+
+model ConsultationSlot {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consultant_id String   @db.Uuid
+  start_time    DateTime @db.Timestamptz
+  end_time      DateTime @db.Timestamptz
+  is_booked     Boolean  @default(false)
+  created_at    DateTime @default(now()) @db.Timestamptz
+
+  consultant    Consultant @relation(fields: [consultant_id], references: [id], onDelete: Cascade)
+  sessions      ConsultationSession[]
+
+  @@map("consultation_slots")
+}
+
+model ConsultationSession {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String        @db.Uuid
+  consultant_id    String        @db.Uuid
+  slot_id          String        @db.Uuid
+  status           SessionStatus
+  briefing         Json?
+  user_snapshot    Json?
+  meeting_url      String?       @db.VarChar(255)
+  consultant_notes String?
+  duration_minutes Int           @db.SmallInt // 30, 60, 90
+  cancelled_at     DateTime?     @db.Timestamptz
+  created_at       DateTime      @default(now()) @db.Timestamptz
+
+  user             User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  consultant       Consultant       @relation(fields: [consultant_id], references: [id], onDelete: Cascade)
+  slot             ConsultationSlot @relation(fields: [slot_id], references: [id], onDelete: Cascade)
+
+  @@map("consultation_sessions")
+}
+
+model MonthlyDiagnosis {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String   @db.Uuid
+  month_year      DateTime @db.Date
+  health_score    Int      @db.SmallInt
+  score_delta     Int      @db.SmallInt
+  on_track_items  String[]
+  attention_items String[]
+  decision_items  String[]
+  generated_at    DateTime @default(now()) @db.Timestamptz
+
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("monthly_diagnoses")
+}
