@@ -6,13 +6,8 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  // BYPASS: If no Supabase URL is provided, bypass auth for UI development
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    return supabaseResponse;
-  }
-
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
@@ -43,7 +38,8 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/dashboard") || 
     request.nextUrl.pathname.startsWith("/tools") ||
     request.nextUrl.pathname.startsWith("/roadmap") ||
-    request.nextUrl.pathname.startsWith("/konsultasi");
+    request.nextUrl.pathname.startsWith("/konsultasi") ||
+    request.nextUrl.pathname.startsWith("/onboarding");
 
   if (!user && isProtectedRoute) {
     // no user, potentially respond by redirecting the user to the login page

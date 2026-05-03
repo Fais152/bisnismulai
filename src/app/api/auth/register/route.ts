@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 export async function POST(request: Request) {
   try {
@@ -7,7 +8,14 @@ export async function POST(request: Request) {
 
     if (!email || !password || !fullName) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Semua field harus diisi" },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: "Password harus minimal 6 karakter" },
         { status: 400 }
       );
     }
@@ -29,17 +37,49 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    // Note: The users table in Prisma should ideally be synced via a Supabase Database Webhook (Auth Hook)
-    // or we can insert it here directly. But Supabase allows triggers on auth.users -> public.users.
-    // For simplicity, assuming a trigger will be set up in Supabase or we handle it later.
+    // Auto-confirm email using Admin API (service_role key)
+    // This bypasses the "email not confirmed" issue during development
+    if (data.user && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const supabaseAdmin = createAdminClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false,
+            },
+          }
+        );
+
+        await supabaseAdmin.auth.admin.updateUserById(data.user.id, {
+          email_confirm: true,
+        });
+      } catch (adminErr) {
+        // If admin confirm fails, registration still succeeded
+        // User just won't be auto-confirmed
+        console.warn("Auto-confirm failed:", adminErr);
+      }
+    }
+
+    // Auto sign-in the user after registration
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      // If sign-in fails, registration still succeeded - user can log in manually
+      console.warn("Auto sign-in failed:", signInError.message);
+    }
 
     return NextResponse.json(
-      { message: "Registration successful", user: data.user },
+      { message: "Pendaftaran berhasil", user: data.user },
       { status: 200 }
     );
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error.message || "Terjadi kesalahan server" },
       { status: 500 }
     );
   }
