@@ -1,5 +1,6 @@
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
+import { ChatbotWidget } from "@/components/chatbot/ChatbotWidget";
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,7 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+      <ChatbotWidget />
     </div>
   );
 }

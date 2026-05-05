@@ -1,167 +1,174 @@
 "use client";
 
+import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { motion, Variants } from "framer-motion";
-import { CalendarDays, Clock, Star, MessageSquare, Video } from "lucide-react";
+import { Bot, MessageSquare, Send, Trash2, Zap, Clock } from "lucide-react";
+import { MessageBubble } from "@/components/chatbot/MessageBubble";
+import { TypingIndicator } from "@/components/chatbot/TypingIndicator";
+import { SuggestedQuestions } from "@/components/chatbot/SuggestedQuestions";
+import { EmptyState } from "@/components/chatbot/EmptyState";
+import { useChatbot } from "@/hooks/useChatbot";
+import { UserContext } from "@/types/chatbot";
 
 const container: Variants = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+  show: { opacity: 1, transition: { staggerChildren: 0.08 } },
 };
 const item: Variants = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 280, damping: 24 } },
 };
 
-const consultants = [
-  {
-    name: "Rizky Pratama, S.E.",
-    expertise: ["Keuangan Bisnis", "Perpajakan UMKM"],
-    rating: 4.9,
-    sessions: 127,
-    available: true,
-    initials: "RP",
-    color: "from-blue-500 to-cyan-500",
-  },
-  {
-    name: "Sari Dewi, M.M.",
-    expertise: ["Strategi Pemasaran", "Branding"],
-    rating: 4.8,
-    sessions: 89,
-    available: true,
-    initials: "SD",
-    color: "from-purple-500 to-pink-500",
-  },
-  {
-    name: "Budi Santoso, S.H.",
-    expertise: ["Legalitas Usaha", "Kontrak Bisnis"],
-    rating: 5.0,
-    sessions: 64,
-    available: false,
-    initials: "BS",
-    color: "from-orange-500 to-red-500",
-  },
-];
+export default function BizBotPage() {
+  const [input, setInput] = useState("");
+  const [userContext, setUserContext] = useState<UserContext | undefined>();
+  const [usageCount, setUsageCount] = useState(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-const slots = [
-  { day: "Senin, 5 Mei", times: ["09.00", "11.00", "14.00"] },
-  { day: "Selasa, 6 Mei", times: ["10.00", "13.00"] },
-  { day: "Rabu, 7 Mei", times: ["09.00", "15.00", "16.00"] },
-];
+  const { messages, isLoading, error, suggestedQuestions, sendMessage, clearMessages } = useChatbot(userContext);
 
-export default function KonsultasiPage() {
+  // Fetch user context
+  useEffect(() => {
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then(({ data }) => {
+        if (data) {
+          setUserContext({
+            current_phase: data.current_phase ?? 1,
+            business_type: data.business_type ?? undefined,
+            health_score: data.health_score ?? undefined,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Track usage count from messages
+  useEffect(() => {
+    const userMsgs = messages.filter((m) => m.role === "user").length;
+    setUsageCount(userMsgs);
+  }, [messages]);
+
+  // Auto-scroll
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
+
+  const handleSend = async () => {
+    const text = input.trim();
+    if (!text || isLoading) return;
+    setInput("");
+    await sendMessage(text);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleSelectQuestion = (q: string) => {
+    setInput(q);
+    inputRef.current?.focus();
+  };
+
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="max-w-5xl mx-auto space-y-10">
-      <motion.div variants={item}>
-        <h1 className="text-3xl font-bold tracking-tight">Konsultasi Bisnis</h1>
-        <p className="text-muted-foreground mt-2">
-          Konsultasi 1-on-1 dengan mentor bisnis berpengalaman sesuai kebutuhan spesifik Anda.
-        </p>
-      </motion.div>
-
-      {/* How it works */}
-      <motion.div variants={item} className="glass-panel rounded-2xl p-6">
-        <h2 className="font-bold mb-4">Cara Kerja</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {[
-            { step: "1", icon: "🧑‍💼", title: "Pilih Konsultan", desc: "Pilih berdasarkan keahlian yang paling sesuai kebutuhan bisnis Anda." },
-            { step: "2", icon: "📅", title: "Booking Jadwal", desc: "Pilih slot waktu yang tersedia dan isi ringkasan masalah bisnis Anda." },
-            { step: "3", icon: "🎯", title: "Sesi via Video", desc: "Ikuti sesi 60 menit 1-on-1 dan dapatkan rekomendasi langsung dari ahlinya." },
-          ].map((s) => (
-            <div key={s.step} className="flex flex-col items-center text-center gap-3">
-              <span className="text-4xl">{s.icon}</span>
-              <div>
-                <p className="font-semibold">{s.title}</p>
-                <p className="text-sm text-muted-foreground mt-1">{s.desc}</p>
-              </div>
+    <motion.div variants={container} initial="hidden" animate="show" className="max-w-5xl mx-auto space-y-6 h-full">
+      {/* Header */}
+      <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center shadow-lg shadow-primary/30">
+              <Bot className="h-5 w-5 text-white" />
             </div>
-          ))}
+            BizBot AI
+          </h1>
+          <p className="text-muted-foreground mt-1">Asisten konsultan bisnis virtual — tanya apa saja seputar bisnis kamu.</p>
+        </div>
+
+        {/* Stats */}
+        <div className="flex items-center gap-3">
+          <div className="glass-panel rounded-xl px-4 py-2.5 flex items-center gap-2 text-sm">
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">Sisa hari ini:</span>
+            <span className="font-bold text-primary">{30 - usageCount}</span>
+            <span className="text-muted-foreground">/ 30</span>
+          </div>
+          <div className="glass-panel rounded-xl px-4 py-2.5 flex items-center gap-2 text-sm">
+            <MessageSquare className="h-4 w-4 text-emerald-500" />
+            <span className="font-medium text-emerald-500">Online</span>
+          </div>
         </div>
       </motion.div>
 
-      {/* Consultants */}
-      <motion.section variants={item}>
-        <h2 className="text-lg font-bold mb-5">Pilih Konsultan</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {consultants.map((c, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ y: -4 }}
-              className="glass-panel rounded-2xl p-5 flex flex-col gap-4 group hover:border-primary/40 hover:shadow-[0_8px_30px_rgba(37,99,235,0.1)] transition-all"
+      {/* Chat Container */}
+      <motion.div
+        variants={item}
+        className="glass-panel rounded-2xl overflow-hidden flex flex-col"
+        style={{ height: "calc(100vh - 280px)", minHeight: "400px" }}
+      >
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto py-4 space-y-1 scroll-smooth">
+          {messages.length === 0 ? (
+            <EmptyState onSelectQuestion={handleSelectQuestion} />
+          ) : (
+            <>
+              {messages.map((msg, i) => (
+                <MessageBubble key={i} message={msg} />
+              ))}
+              {!isLoading && suggestedQuestions.length > 0 && (
+                <SuggestedQuestions questions={suggestedQuestions} onSelect={handleSelectQuestion} />
+              )}
+            </>
+          )}
+          {isLoading && <TypingIndicator />}
+          {error && (
+            <div className="mx-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              {error}
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Area */}
+        <div className="shrink-0 p-4 border-t border-border/40 bg-card/50 backdrop-blur-sm">
+          <div className="flex items-end gap-3">
+            <div className="flex-1 flex items-end gap-2 bg-background border border-border/60 rounded-xl px-4 py-3 focus-within:border-primary/50 focus-within:ring-1 ring-primary/20 transition-all">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Tanya seputar bisnis kamu... (Enter = kirim, Shift+Enter = baris baru)"
+                rows={1}
+                disabled={isLoading}
+                className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground/60 max-h-32 disabled:opacity-50"
+                style={{ lineHeight: "1.6" }}
+              />
+            </div>
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              className="p-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary/20 shrink-0"
             >
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${c.color} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
-                  {c.initials}
-                </div>
-                <div>
-                  <p className="font-bold text-sm">{c.name}</p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-                    <span className="text-xs font-medium">{c.rating}</span>
-                    <span className="text-xs text-muted-foreground">· {c.sessions} sesi</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5">
-                {c.expertise.map((e) => (
-                  <span key={e} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{e}</span>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/40">
-                <span className={`flex items-center gap-1.5 text-xs font-medium ${c.available ? "text-emerald-500" : "text-muted-foreground"}`}>
-                  <span className={`w-2 h-2 rounded-full ${c.available ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
-                  {c.available ? "Tersedia" : "Tidak Tersedia"}
-                </span>
-                <button
-                  disabled={!c.available}
-                  onClick={() => alert("Sistem Booking sedang dalam pengembangan.")}
-                  className="text-xs font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Booking
-                </button>
-              </div>
-            </motion.div>
-          ))}
+              <Send className="h-5 w-5" />
+            </button>
+            <button
+              onClick={clearMessages}
+              title="Hapus riwayat"
+              className="p-3 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 border border-border/50 transition-all shrink-0"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          </div>
+          <p className="text-[11px] text-muted-foreground/50 mt-2 flex items-center gap-1.5">
+            <Clock className="h-3 w-3" />
+            BizBot hanya membahas topik bisnis. Riwayat chat tersimpan di perangkat ini.
+          </p>
         </div>
-      </motion.section>
-
-      {/* Jadwal Tersedia */}
-      <motion.section variants={item}>
-        <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-primary" /> Jadwal Tersedia Minggu Ini
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {slots.map((slot, i) => (
-            <div key={i} className="glass-panel rounded-2xl p-5">
-              <p className="font-semibold text-sm mb-3">{slot.day}</p>
-              <div className="flex flex-wrap gap-2">
-                {slot.times.map((time) => (
-                  <button
-                    key={time}
-                    onClick={() => alert("Sistem Booking sedang dalam pengembangan.")}
-                    className="flex items-center gap-1.5 text-sm border border-border/50 hover:border-primary hover:bg-primary/10 hover:text-primary px-3 py-1.5 rounded-lg transition-all"
-                  >
-                    <Clock className="h-3.5 w-3.5" /> {time}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.section>
-
-      {/* Riwayat Sesi */}
-      <motion.section variants={item} className="glass-panel rounded-2xl p-6">
-        <h2 className="font-bold mb-4 flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-primary" /> Riwayat Konsultasi
-        </h2>
-        <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
-          <Video className="h-12 w-12 text-muted-foreground/30" />
-          <p className="text-muted-foreground text-sm">Belum ada sesi konsultasi yang telah selesai.</p>
-          <p className="text-xs text-muted-foreground">Booking sesi pertama Anda untuk memulai!</p>
-        </div>
-      </motion.section>
+      </motion.div>
     </motion.div>
   );
 }

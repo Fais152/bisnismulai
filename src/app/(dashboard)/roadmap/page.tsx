@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 import { motion, Variants } from "framer-motion";
 import { CheckCircle2, Lock, Circle, ChevronRight, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -75,6 +77,41 @@ const statusConfig = {
 };
 
 export default function RoadmapPage() {
+  const [currentPhase, setCurrentPhase] = useState(1);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/user/profile")
+      .then(r => r.json())
+      .then(({ data }) => {
+        if (data?.current_phase) {
+          setCurrentPhase(data.current_phase);
+        }
+        setLoading(false);
+      });
+  }, []);
+
+  const handleNextPhase = async () => {
+    const nextPhase = currentPhase + 1;
+    if (nextPhase > 4) return;
+    
+    // Optimistic update
+    setCurrentPhase(nextPhase);
+    
+    await fetch("/api/user/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ current_phase: nextPhase })
+    });
+  };
+
+  const dynamicPhases = phases.map(p => ({
+    ...p,
+    status: p.number < currentPhase ? "completed" : p.number === currentPhase ? "active" : "locked"
+  }));
+
+  if (loading) return null;
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="max-w-4xl mx-auto space-y-8">
       <motion.div variants={item}>
@@ -90,14 +127,14 @@ export default function RoadmapPage() {
           <div className="flex-1">
             <p className="text-sm text-muted-foreground mb-1">Progress Keseluruhan</p>
             <div className="flex items-end gap-2 mb-3">
-              <span className="text-4xl font-bold text-primary">2</span>
+              <span className="text-4xl font-bold text-primary">{currentPhase}</span>
               <span className="text-muted-foreground mb-1">/ 4 Fase</span>
             </div>
             <div className="h-3 w-full bg-secondary rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-gradient-to-r from-primary to-blue-400 rounded-full"
                 initial={{ width: 0 }}
-                animate={{ width: "37.5%" }}
+                animate={{ width: `${(currentPhase / 4) * 100}%` }}
                 transition={{ duration: 1.2, ease: "easeOut" }}
               />
             </div>
@@ -115,7 +152,7 @@ export default function RoadmapPage() {
 
       {/* Phases */}
       <div className="space-y-4">
-        {phases.map((phase) => {
+        {dynamicPhases.map((phase) => {
           const cfg = statusConfig[phase.status as keyof typeof statusConfig];
           const completedTasks = phase.tasks.filter((t) => t.done).length;
           return (
@@ -184,7 +221,7 @@ export default function RoadmapPage() {
 
                   {/* CTA for active phase */}
                   {phase.status === "active" && (
-                    <button onClick={() => alert("Fitur Sinkronisasi Progress Fase akan segera hadir!")} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline group">
+                    <button onClick={handleNextPhase} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline group">
                       Lanjutkan Fase <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </button>
                   )}

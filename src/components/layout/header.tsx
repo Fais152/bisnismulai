@@ -58,7 +58,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/40 glass px-6">
       <div className="flex md:hidden items-center gap-2">
-        <button className="text-muted-foreground hover:text-foreground">
+        <button 
+          onClick={() => window.dispatchEvent(new CustomEvent('toggle-mobile-menu'))}
+          className="text-muted-foreground hover:text-foreground p-2 -ml-2"
+        >
           <Menu className="h-5 w-5" />
         </button>
         <Link href="/dashboard" className="flex items-center gap-2">

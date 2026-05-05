@@ -1,62 +1,47 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+const TOOL_SLUG = "hpp";
 
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const payload = await request.json();
 
-    // Check if ToolData already exists for this user and tool
-    const existingToolData = await prisma.toolData.findUnique({
-      where: {
-        user_id_tool_slug: {
-          user_id: user.id,
-          tool_slug: "hpp"
-        }
-      }
-    });
+    const { data: existing } = await supabase
+      .from("tool_data")
+      .select("id, data, version")
+      .eq("user_id", user.id)
+      .eq("tool_slug", TOOL_SLUG)
+      .single();
 
-    if (existingToolData) {
-      // If exists, push current to history and update
-      await prisma.toolDataHistory.create({
-        data: {
-          tool_data_id: existingToolData.id,
-          user_id: user.id,
-          tool_slug: "hpp",
-          data_snapshot: existingToolData.data as any,
-        }
+    if (existing) {
+      // Save to history
+      await supabase.from("tool_data_history").insert({
+        tool_data_id: existing.id,
+        user_id: user.id,
+        tool_slug: TOOL_SLUG,
+        data_snapshot: existing.data,
       });
-
-      const updated = await prisma.toolData.update({
-        where: { id: existingToolData.id },
-        data: {
-          data: payload,
-          version: { increment: 1 }
-        }
-      });
-
-      return NextResponse.json({ message: "Updated", data: updated }, { status: 200 });
-    } else {
-      // Create new
-      const created = await prisma.toolData.create({
-        data: {
-          user_id: user.id,
-          tool_slug: "hpp",
-          data: payload,
-        }
-      });
-
-      return NextResponse.json({ message: "Created", data: created }, { status: 201 });
+      // Update current
+      const { data: updated } = await supabase
+        .from("tool_data")
+        .update({ data: payload, version: (existing.version ?? 1) + 1 })
+        .eq("id", existing.id)
+        .select()
+        .single();
+      return NextResponse.json({ message: "Updated", data: updated });
     }
+
+    const { data: created } = await supabase
+      .from("tool_data")
+      .insert({ user_id: user.id, tool_slug: TOOL_SLUG, data: payload })
+      .select()
+      .single();
+    return NextResponse.json({ message: "Created", data: created }, { status: 201 });
   } catch (error: any) {
     console.error("API Tools HPP Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -67,21 +52,16 @@ export async function GET() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { data } = await supabase
+      .from("tool_data")
+      .select("data")
+      .eq("user_id", user.id)
+      .eq("tool_slug", TOOL_SLUG)
+      .single();
 
-    const toolData = await prisma.toolData.findUnique({
-      where: {
-        user_id_tool_slug: {
-          user_id: user.id,
-          tool_slug: "hpp"
-        }
-      }
-    });
-
-    return NextResponse.json({ data: toolData?.data || null }, { status: 200 });
+    return NextResponse.json({ data: data?.data ?? null });
   } catch (error: any) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

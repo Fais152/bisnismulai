@@ -25,6 +25,7 @@ export async function GET() {
           initial_capital: null,
           target_monthly_revenue: null,
           onboarding_completed: false,
+          current_phase: 1,
         }
       });
     }
@@ -42,7 +43,7 @@ export async function PATCH(request: Request) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { full_name, business_type, business_stage, initial_capital, target_monthly_revenue } = body;
+    const { full_name, business_type, business_stage, initial_capital, target_monthly_revenue, current_phase } = body;
 
     // Update auth metadata for full_name
     if (full_name) {
@@ -60,6 +61,7 @@ export async function PATCH(request: Request) {
         business_stage: business_stage ?? null,
         initial_capital: initial_capital ? parseInt(initial_capital) : null,
         target_monthly_revenue: target_monthly_revenue ? parseInt(target_monthly_revenue) : null,
+        ...(current_phase !== undefined && { current_phase }),
         updated_at: new Date().toISOString(),
       })
       .select()

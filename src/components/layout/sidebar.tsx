@@ -9,7 +9,7 @@ import {
   Map, 
   Calculator, 
   FileText, 
-  CalendarCheck, 
+  Bot,
   Settings,
   X,
   Menu,
@@ -22,7 +22,7 @@ const navItems = [
   { name: "Roadmap Fase", href: "/roadmap", icon: Map },
   { name: "Tools & Kalkulator", href: "/tools", icon: Calculator },
   { name: "SOP & Legal", href: "/legal", icon: FileText },
-  { name: "Konsultasi", href: "/konsultasi", icon: CalendarCheck },
+  { name: "BizBot AI", href: "/konsultasi", icon: Bot },
 ];
 
 function NavContent({ pathname, onClose }: { pathname: string; onClose?: () => void }) {
@@ -99,6 +99,13 @@ export function Sidebar() {
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
+  // Listen to header hamburger button
+  useEffect(() => {
+    const handleToggle = () => setMobileOpen(prev => !prev);
+    window.addEventListener('toggle-mobile-menu', handleToggle);
+    return () => window.removeEventListener('toggle-mobile-menu', handleToggle);
+  }, []);
+
   return (
     <>
       {/* ===== Desktop Sidebar ===== */}
@@ -106,16 +113,8 @@ export function Sidebar() {
         <NavContent pathname={pathname} />
       </aside>
 
-      {/* ===== Mobile Hamburger Button (rendered inside Header via portal-less approach) ===== */}
-      {/* The Header already has a mobile Menu button — we'll hook into it via the global state trick.
-          Instead, we render a floating hamburger that appears on mobile. */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed bottom-5 right-5 z-50 w-12 h-12 bg-primary text-white rounded-full shadow-lg shadow-primary/40 flex items-center justify-center hover:bg-primary/90 transition-all"
-        aria-label="Buka menu"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
+      {/* ===== Mobile Hamburger Button (Removed) ===== */}
+      {/* Handled by Header.tsx via custom event */}
 
       {/* ===== Mobile Drawer ===== */}
       <AnimatePresence>
