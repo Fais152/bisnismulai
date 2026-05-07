@@ -345,11 +345,11 @@ export default function HppPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border/30 bg-secondary/30">
-                        <th className="text-left text-xs text-muted-foreground font-medium px-4 py-2.5">NAMA BAHAN</th>
-                        <th className="text-right text-xs text-muted-foreground font-medium px-3 py-2.5 w-20">QTY</th>
-                        <th className="text-left text-xs text-muted-foreground font-medium px-3 py-2.5 w-28">SATUAN</th>
-                        <th className="text-right text-xs text-muted-foreground font-medium px-3 py-2.5 w-32">HARGA/SAT</th>
-                        <th className="text-right text-xs text-muted-foreground font-medium px-4 py-2.5 w-32">TOTAL</th>
+                        <th className="text-left text-xs text-muted-foreground font-medium px-4 py-2.5 min-w-[150px]">NAMA BAHAN</th>
+                        <th className="text-right text-xs text-muted-foreground font-medium px-3 py-2.5 w-20 min-w-[80px]">QTY</th>
+                        <th className="text-left text-xs text-muted-foreground font-medium px-3 py-2.5 w-28 min-w-[110px]">SATUAN</th>
+                        <th className="text-right text-xs text-muted-foreground font-medium px-3 py-2.5 w-32 min-w-[120px]">HARGA/SAT</th>
+                        <th className="text-right text-xs text-muted-foreground font-medium px-4 py-2.5 w-32 min-w-[120px]">TOTAL</th>
                         <th className="w-10" />
                       </tr>
                     </thead>
@@ -391,12 +391,15 @@ export default function HppPage() {
                               />
                             </td>
                             <td className="px-3 py-2">
-                              <input
-                                value={b.hargaSat ? b.hargaSat.toLocaleString("id-ID") : ""}
-                                onChange={e => setBahanField(b.id, "hargaSat", parseRupiah(e.target.value))}
-                                placeholder="0"
-                                className="w-full bg-transparent outline-none text-sm text-right"
-                              />
+                              <div className="relative">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Rp</span>
+                                <input
+                                  value={b.hargaSat ? b.hargaSat.toLocaleString("id-ID") : ""}
+                                  onChange={e => setBahanField(b.id, "hargaSat", parseRupiah(e.target.value))}
+                                  placeholder="0"
+                                  className="w-full bg-transparent outline-none text-sm text-right pl-7"
+                                />
+                              </div>
                             </td>
                             <td className="px-4 py-2 text-right font-medium text-primary text-sm">
                               {fmt(b.qty * b.hargaSat)}
@@ -442,7 +445,7 @@ export default function HppPage() {
                         value={draft[field] ? (draft[field] as number).toLocaleString("id-ID") : ""}
                         onChange={e => setField(field, parseRupiah(e.target.value))}
                         placeholder="0"
-                        className="w-full bg-background border border-border/50 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:ring-2 ring-primary/40 outline-none"
+                        className="w-full bg-background border border-border/50 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 ring-primary/40 outline-none"
                       />
                     </div>
                   </div>

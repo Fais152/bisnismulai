@@ -352,7 +352,7 @@ export default function BreakEvenPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-primary-foreground/80">Margin Kontribusi</span>
-                <span className="font-semibold">{isValid ? formatRupiah(contributionMargin) : "—"}/unit</span>
+                <span className="font-semibold">{isValid ? formatRupiah(contributionMargin) : "—"} / unit</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-primary-foreground/80">Rasio CM</span>
@@ -371,7 +371,7 @@ export default function BreakEvenPage() {
                 <p className="text-xs text-muted-foreground">Harus menjual</p>
                 <p className="text-2xl font-bold text-primary">
                   {isValid ? targetUnits.toLocaleString("id-ID") : "—"}
-                  <span className="text-base font-normal text-muted-foreground"> unit</span>
+                  <span className="text-base font-normal text-muted-foreground ml-1">unit</span>
                 </p>
               </div>
               <div className="bg-background/60 rounded-xl p-3">
@@ -381,7 +381,7 @@ export default function BreakEvenPage() {
               <div className="bg-background/60 rounded-xl p-3">
                 <p className="text-xs text-muted-foreground">Unit Tambahan Setelah BEP</p>
                 <p className="text-lg font-bold text-emerald-400">
-                  +{isValid ? (targetUnits - bepUnits).toLocaleString("id-ID") : "—"} unit
+                  +{isValid ? (targetUnits - bepUnits).toLocaleString("id-ID") : "—"} <span className="text-sm font-normal text-muted-foreground">unit</span>
                 </p>
               </div>
             </div>
