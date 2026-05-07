@@ -201,10 +201,10 @@ export default function HppPage() {
   const calc = draft ? calcProduk(draft) : null;
 
   return (
-    <div className="max-w-6xl mx-auto h-[calc(100vh-120px)] flex gap-0 rounded-2xl overflow-hidden border border-border/40 shadow-xl">
+    <div className="max-w-6xl mx-auto h-auto min-h-[calc(100vh-120px)] md:h-[calc(100vh-120px)] flex flex-col md:flex-row gap-0 rounded-2xl overflow-hidden border border-border/40 shadow-xl">
 
-      {/* ── LEFT SIDEBAR: Product List ── */}
-      <div className="w-64 shrink-0 bg-card/80 border-r border-border/40 flex flex-col">
+      {/* ── TOP/LEFT SIDEBAR: Product List ── */}
+      <div className="w-full md:w-64 shrink-0 bg-card/80 border-b md:border-b-0 md:border-r border-border/40 flex flex-col h-[35vh] md:h-auto">
         <div className="p-4 border-b border-border/40 flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Produk</p>
