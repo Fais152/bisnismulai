@@ -1,11 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Plus, Trash2, Save, Package, ChevronRight,
-  Calculator, Edit2, X, Check
-} from "lucide-react";
+import { Plus, Trash2, Save, Calculator, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -30,6 +27,62 @@ interface Produk {
 
 const KATEGORI = ["Makanan", "Minuman", "Fashion/Pakaian", "Kerajinan", "Jasa", "Digital", "Lainnya"];
 const SATUAN   = ["gram", "kg", "ml", "liter", "pcs", "buah", "ikat", "porsi", "cup", "bungkus"];
+
+// ── Custom Select (dark-mode safe) ────────────────────────────
+function CustomSelect({ value, onChange, options, className }: {
+  value: string; onChange: (v: string) => void;
+  options: string[]; className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className={cn("relative", className)}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between gap-1 bg-background border border-border/50 rounded-xl px-3 py-2.5 text-sm focus:ring-2 ring-primary/40 outline-none text-left"
+      >
+        <span className="truncate">{value}</span>
+        <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform", open && "rotate-180")} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            className="absolute z-50 mt-1 w-full bg-card border border-border/50 rounded-xl shadow-xl overflow-hidden"
+          >
+            <div className="max-h-48 overflow-y-auto py-1">
+              {options.map(opt => (
+                <button
+                  key={opt} type="button"
+                  onClick={() => { onChange(opt); setOpen(false); }}
+                  className={cn(
+                    "w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors",
+                    opt === value && "text-primary font-medium bg-primary/5"
+                  )}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 const newBahan = (): Bahan => ({
   id: Math.random().toString(36).slice(2),
@@ -259,13 +312,11 @@ export default function HppPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Kategori</label>
-                  <select
+                  <CustomSelect
                     value={draft.kategori}
-                    onChange={e => setField("kategori", e.target.value)}
-                    className="w-full bg-background border border-border/50 rounded-xl px-4 py-2.5 text-sm focus:ring-2 ring-primary/40 outline-none appearance-none"
-                  >
-                    {KATEGORI.map(k => <option key={k} value={k}>{k}</option>)}
-                  </select>
+                    onChange={v => setField("kategori", v)}
+                    options={KATEGORI}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Target Margin (%)</label>
@@ -332,13 +383,12 @@ export default function HppPage() {
                               />
                             </td>
                             <td className="px-3 py-2">
-                              <select
+                              <CustomSelect
                                 value={b.satuan}
-                                onChange={e => setBahanField(b.id, "satuan", e.target.value)}
-                                className="w-full bg-transparent outline-none text-sm appearance-none"
-                              >
-                                {SATUAN.map(s => <option key={s} value={s}>{s}</option>)}
-                              </select>
+                                onChange={v => setBahanField(b.id, "satuan", v)}
+                                options={SATUAN}
+                                className="min-w-[100px]"
+                              />
                             </td>
                             <td className="px-3 py-2">
                               <input
