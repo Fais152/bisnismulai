@@ -254,11 +254,19 @@ export default function HppPage() {
           {produkList.map(p => {
             const c = calcProduk(p);
             return (
-              <button
+              <div
                 key={p.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => selectProduk(p)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    selectProduk(p);
+                  }
+                }}
                 className={cn(
-                  "min-w-[160px] md:min-w-0 md:w-full shrink-0 text-left px-3 py-2.5 rounded-xl transition-all group border md:border-transparent",
+                  "min-w-[160px] md:min-w-0 md:w-full shrink-0 text-left px-3 py-2.5 rounded-xl transition-all group border md:border-transparent cursor-pointer",
                   activeId === p.id
                     ? "bg-primary/10 border-primary/30"
                     : "hover:bg-secondary/60 border-border/20 md:border-transparent"
@@ -275,7 +283,7 @@ export default function HppPage() {
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">{fmt(c.hpp)} HPP</p>
                 <p className="text-xs text-primary font-medium">{p.targetMargin}% margin</p>
-              </button>
+              </div>
             );
           })}
         </div>
