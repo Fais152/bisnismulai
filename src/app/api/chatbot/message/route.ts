@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
         .select("message_count")
         .eq("user_id", user.id)
         .eq("date", today)
-        .single();
+        .maybeSingle();
 
       if (usage && usage.message_count >= 30) {
         return NextResponse.json(
@@ -121,49 +121,62 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Kirim pesan dan tunggu respons
-    const result = await chat.sendMessage(message);
-    const reply = result.response.text();
+    // Kirim pesan dan tunggu respons dari Gemini
+    const geminiResult = await chat.sendMessage(message);
+    const reply = geminiResult.response.text();
 
-    // Update rate limit counter & simpan sesi chat
+    // Simpan ke DB secara non-blocking (jangan crash jika tabel belum ada)
     if (user) {
-      await supabase.rpc("increment_chatbot_usage", { p_user_id: user.id });
+      try {
+        await supabase.rpc("increment_chatbot_usage", { p_user_id: user.id });
 
-      // Simpan/update sesi chat di database
-      const { data: existing } = await supabase
-        .from("chatbot_sessions")
-        .select("id, messages")
-        .eq("user_id", user.id)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      const newMessages = [
-        ...recentHistory,
-        { role: "user", parts: [{ text: message }], timestamp: new Date().toISOString() },
-        { role: "model", parts: [{ text: reply }], timestamp: new Date().toISOString() },
-      ];
-
-      if (existing?.id) {
-        await supabase
+        const { data: existing } = await supabase
           .from("chatbot_sessions")
-          .update({ messages: newMessages, updated_at: new Date().toISOString() })
-          .eq("id", existing.id);
-      } else {
-        await supabase.from("chatbot_sessions").insert({
-          user_id: user.id,
-          messages: newMessages,
-        });
+          .select("id")
+          .eq("user_id", user.id)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const newMessages = [
+          ...recentHistory,
+          { role: "user", parts: [{ text: message }], timestamp: new Date().toISOString() },
+          { role: "model", parts: [{ text: reply }], timestamp: new Date().toISOString() },
+        ];
+
+        if (existing?.id) {
+          await supabase
+            .from("chatbot_sessions")
+            .update({ messages: newMessages, updated_at: new Date().toISOString() })
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("chatbot_sessions").insert({
+            user_id: user.id,
+            messages: newMessages,
+          });
+        }
+      } catch (dbErr) {
+        console.warn("Chatbot DB save warning (non-fatal):", dbErr);
       }
     }
 
     const suggested_questions = generateSuggestedQuestions(message);
-
     return NextResponse.json({ reply, suggested_questions });
-  } catch (error) {
-    console.error("Chatbot error:", error);
+
+  } catch (error: any) {
+    const errMsg = error?.message ?? String(error);
+    console.error("Chatbot error detail:", errMsg);
+
+    // Handle Gemini quota exceeded (429)
+    if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('Too Many Requests')) {
+      return NextResponse.json(
+        { error: "⚠️ Batas penggunaan API AI sedang tercapai. Silakan coba lagi dalam beberapa menit, atau tunggu hingga pukul 07.00 WIB besok untuk reset harian." },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Maaf, terjadi kesalahan. Silakan coba lagi." },
+      { error: "Maaf, terjadi kesalahan teknis. Silakan coba lagi." },
       { status: 500 }
     );
   }
