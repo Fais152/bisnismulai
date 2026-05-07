@@ -121,7 +121,7 @@ export default function HppPage() {
 
   // Load
   useEffect(() => {
-    fetch("/api/tools/hpp")
+    fetch("/api/tools/hpp", { cache: "no-store" })
       .then(r => r.json())
       .then(({ data }) => {
         if (data?.produkList?.length) {
@@ -186,17 +186,44 @@ export default function HppPage() {
   };
 
   // Draft updaters
-  const setField = <K extends keyof Produk>(key: K, val: Produk[K]) =>
-    setDraft(d => d ? { ...d, [key]: val } : d);
+  const setField = <K extends keyof Produk>(key: K, val: Produk[K]) => {
+    setDraft(d => {
+      if (!d) return d;
+      const updated = { ...d, [key]: val };
+      setProdukList(list => list.map(p => p.id === updated.id ? updated : p));
+      return updated;
+    });
+  };
 
-  const setBahanField = (id: string, key: keyof Bahan, val: string | number) =>
-    setDraft(d => d ? {
-      ...d,
-      bahan: d.bahan.map(b => b.id === id ? { ...b, [key]: val } : b),
-    } : d);
+  const setBahanField = (id: string, key: keyof Bahan, val: string | number) => {
+    setDraft(d => {
+      if (!d) return d;
+      const updated = {
+        ...d,
+        bahan: d.bahan.map(b => b.id === id ? { ...b, [key]: val } : b),
+      };
+      setProdukList(list => list.map(p => p.id === updated.id ? updated : p));
+      return updated;
+    });
+  };
 
-  const addBahan    = () => setDraft(d => d ? { ...d, bahan: [...d.bahan, newBahan()] } : d);
-  const removeBahan = (id: string) => setDraft(d => d ? { ...d, bahan: d.bahan.filter(b => b.id !== id) } : d);
+  const addBahan = () => {
+    setDraft(d => {
+      if (!d) return d;
+      const updated = { ...d, bahan: [...d.bahan, newBahan()] };
+      setProdukList(list => list.map(p => p.id === updated.id ? updated : p));
+      return updated;
+    });
+  };
+
+  const removeBahan = (id: string) => {
+    setDraft(d => {
+      if (!d) return d;
+      const updated = { ...d, bahan: d.bahan.filter(b => b.id !== id) };
+      setProdukList(list => list.map(p => p.id === updated.id ? updated : p));
+      return updated;
+    });
+  };
 
   const calc = draft ? calcProduk(draft) : null;
 
@@ -204,24 +231,24 @@ export default function HppPage() {
     <div className="max-w-6xl mx-auto h-auto min-h-[calc(100vh-120px)] md:h-[calc(100vh-120px)] flex flex-col md:flex-row gap-0 rounded-2xl overflow-hidden border border-border/40 shadow-xl">
 
       {/* ── TOP/LEFT SIDEBAR: Product List ── */}
-      <div className="w-full md:w-64 shrink-0 bg-card/80 border-b md:border-b-0 md:border-r border-border/40 flex flex-col h-[35vh] md:h-auto">
-        <div className="p-4 border-b border-border/40 flex items-center justify-between">
+      <div className="w-full md:w-64 shrink-0 bg-card/80 border-b md:border-b-0 md:border-r border-border/40 flex flex-col">
+        <div className="p-4 border-b border-border/40 flex items-center justify-between shrink-0">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Produk</p>
             <p className="font-bold text-sm mt-0.5">({produkList.length})</p>
           </div>
           <button
             onClick={handleNewProduk}
-            className="flex items-center gap-1.5 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors font-medium"
+            className="flex items-center gap-1.5 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors font-medium shrink-0"
           >
             <Plus className="h-3.5 w-3.5" /> Baru
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-2 space-y-0.5 px-2">
+        <div className="flex flex-row md:flex-col overflow-x-auto md:overflow-y-auto md:flex-1 py-2 px-2 gap-2 md:gap-0 md:space-y-0.5 scrollbar-thin">
           {produkList.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-8 px-4">
-              Belum ada produk. Klik "+ Baru" untuk mulai.
+            <p className="text-xs text-muted-foreground text-center py-4 md:py-8 px-4 w-full">
+              Belum ada produk. Klik "+ Baru".
             </p>
           )}
           {produkList.map(p => {
@@ -231,10 +258,10 @@ export default function HppPage() {
                 key={p.id}
                 onClick={() => selectProduk(p)}
                 className={cn(
-                  "w-full text-left px-3 py-2.5 rounded-xl transition-all group",
+                  "min-w-[160px] md:min-w-0 md:w-full shrink-0 text-left px-3 py-2.5 rounded-xl transition-all group border md:border-transparent",
                   activeId === p.id
-                    ? "bg-primary/10 border border-primary/30"
-                    : "hover:bg-secondary/60"
+                    ? "bg-primary/10 border-primary/30"
+                    : "hover:bg-secondary/60 border-border/20 md:border-transparent"
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -462,14 +489,14 @@ export default function HppPage() {
                   <div className="px-5 py-3 bg-primary/20 border-b border-primary/20">
                     <p className="text-xs font-bold text-primary uppercase tracking-wider">Kalkulasi Otomatis (Per Porsi)</p>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-primary/10">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {[
                       { label: "Total Bahan", value: fmt(calc.totalBahan), sub: "" },
                       { label: "HPP/Porsi", value: fmt(calc.hpp), sub: "" },
                       { label: "Harga Jual", value: fmt(calc.hargaJual), sub: `Margin ${draft.targetMargin}%`, highlight: true },
                       { label: "Profit/Porsi", value: fmt(calc.profit), sub: "", highlight: true },
-                    ].map(({ label, value, sub, highlight }) => (
-                      <div key={label} className="px-5 py-4">
+                    ].map(({ label, value, sub, highlight }, i) => (
+                      <div key={label} className={cn("px-4 py-3 bg-background/40 rounded-xl border border-border/30", highlight && "border-primary/20 bg-primary/5")}>
                         <p className="text-xs text-muted-foreground mb-1">{label}</p>
                         <p className={cn("text-lg font-bold", highlight ? "text-primary" : "text-foreground")}>{value}</p>
                         {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
