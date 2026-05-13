@@ -103,9 +103,16 @@ export default function RoadmapPage() {
         await Promise.all(
           toolSlugs.map(async (slug) => {
             try {
-              const res = await fetch(`/api/tools/${slug}`);
+              const res = await fetch(`/api/tools/${slug}`, { cache: "no-store" });
               const json = await res.json();
-              toolDone[slug] = !!(json.data && Object.keys(json.data).length > 0);
+              if (!json.data) {
+                toolDone[slug] = false;
+              } else if (slug === "hpp") {
+                // HPP stores { produkList: [...] }
+                toolDone[slug] = Array.isArray(json.data.produkList) && json.data.produkList.length > 0;
+              } else {
+                toolDone[slug] = Object.keys(json.data).length > 0;
+              }
             } catch {
               toolDone[slug] = false;
             }

@@ -228,7 +228,7 @@ export default function HppPage() {
   const calc = draft ? calcProduk(draft) : null;
 
   return (
-    <div className="max-w-6xl mx-auto h-auto min-h-[calc(100vh-120px)] md:h-[calc(100vh-120px)] flex flex-col md:flex-row gap-0 rounded-2xl overflow-hidden border border-border/40 shadow-xl">
+    <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-0 rounded-2xl overflow-hidden border border-border/40 shadow-xl">
 
       {/* ── TOP/LEFT SIDEBAR: Product List ── */}
       <div className="w-full md:w-64 shrink-0 bg-card/80 border-b md:border-b-0 md:border-r border-border/40 flex flex-col">
@@ -497,7 +497,7 @@ export default function HppPage() {
                   <div className="px-5 py-3 bg-primary/20 border-b border-primary/20">
                     <p className="text-xs font-bold text-primary uppercase tracking-wider">Kalkulasi Otomatis (Per Porsi)</p>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4">
                     {[
                       { label: "Total Bahan", value: fmt(calc.totalBahan), sub: "" },
                       { label: "HPP/Porsi", value: fmt(calc.hpp), sub: "" },
