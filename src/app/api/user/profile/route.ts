@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
   try {
@@ -7,14 +8,14 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (!user || authError) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { data, error } = await supabase
+    const admin = createAdminClient();
+    const { data, error } = await admin
       .from("users")
       .select("*")
       .eq("id", user.id)
       .single();
 
     if (error) {
-      // Row might not exist yet — return auth metadata
       return NextResponse.json({
         data: {
           id: user.id,
@@ -45,13 +46,12 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const { full_name, business_type, business_stage, initial_capital, target_monthly_revenue, current_phase } = body;
 
-    // Update auth metadata for full_name
     if (full_name) {
       await supabase.auth.updateUser({ data: { full_name } });
     }
 
-    // Upsert into users table
-    const { data, error } = await supabase
+    const admin = createAdminClient();
+    const { data, error } = await admin
       .from("users")
       .upsert({
         id: user.id,
@@ -68,7 +68,6 @@ export async function PATCH(request: Request) {
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-
     return NextResponse.json({ data, message: "Profil berhasil diperbarui" });
   } catch (e: any) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
