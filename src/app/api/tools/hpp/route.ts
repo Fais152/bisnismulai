@@ -1,21 +1,17 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 const TOOL_SLUG = "hpp";
 
 export async function POST(request: Request) {
   try {
-    // 1. Verify auth with regular client
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // 2. Use admin client for DB writes (bypasses RLS)
-    const admin = createAdminClient();
     const payload = await request.json();
 
-    const { data: existing } = await admin
+    const { data: existing } = await supabase
       .from("tool_data")
       .select("id, data, version")
       .eq("user_id", user.id)
@@ -23,17 +19,16 @@ export async function POST(request: Request) {
       .single();
 
     if (existing) {
-      // Save snapshot to history (ignore error if table missing)
       try {
-        await admin.from("tool_data_history").insert({
+        await supabase.from("tool_data_history").insert({
           tool_data_id: existing.id,
           user_id: user.id,
           tool_slug: TOOL_SLUG,
           data_snapshot: existing.data,
         });
-      } catch (_) { /* history is optional, don't block save */ }
+      } catch (_) { }
 
-      const { data: updated, error } = await admin
+      const { data: updated, error } = await supabase
         .from("tool_data")
         .update({ data: payload, version: (existing.version ?? 1) + 1, updated_at: new Date().toISOString() })
         .eq("id", existing.id)
@@ -47,8 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Updated", data: updated });
     }
 
-    // First save — INSERT
-    const { data: created, error } = await admin
+    const { data: created, error } = await supabase
       .from("tool_data")
       .insert({ user_id: user.id, tool_slug: TOOL_SLUG, data: payload })
       .select()
@@ -68,14 +62,11 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    // 1. Verify auth
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // 2. Use admin client for DB reads
-    const admin = createAdminClient();
-    const { data, error } = await admin
+    const { data, error } = await supabase
       .from("tool_data")
       .select("data")
       .eq("user_id", user.id)
@@ -83,7 +74,6 @@ export async function GET() {
       .single();
 
     if (error && error.code !== "PGRST116") {
-      // PGRST116 = "no rows returned" — that's fine for first-time users
       console.error("HPP GET error:", error);
     }
 

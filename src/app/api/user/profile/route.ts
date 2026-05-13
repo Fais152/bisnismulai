@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
   try {
@@ -8,8 +7,7 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (!user || authError) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const admin = createAdminClient();
-    const { data, error } = await admin
+    const { data, error } = await supabase
       .from("users")
       .select("*")
       .eq("id", user.id)
@@ -50,8 +48,7 @@ export async function PATCH(request: Request) {
       await supabase.auth.updateUser({ data: { full_name } });
     }
 
-    const admin = createAdminClient();
-    const { data, error } = await admin
+    const { data, error } = await supabase
       .from("users")
       .upsert({
         id: user.id,
