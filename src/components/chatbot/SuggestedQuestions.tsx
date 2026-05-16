@@ -9,12 +9,12 @@ export function SuggestedQuestions({ questions, onSelect }: SuggestedQuestionsPr
   if (!questions || questions.length === 0) return null;
 
   return (
-    <div className="px-4 pb-2 flex flex-wrap gap-2">
+    <div className="px-2 pb-2 flex flex-col items-start gap-1">
       {questions.map((q, i) => (
         <button
           key={i}
           onClick={() => onSelect(q)}
-          className="text-xs text-primary border border-primary/30 bg-primary/5 hover:bg-primary/15 hover:border-primary/60 rounded-full px-3 py-1.5 transition-all text-left max-w-full"
+          className="btn-retro text-left text-[11px] px-2 py-1 max-w-[80%]"
         >
           {q}
         </button>

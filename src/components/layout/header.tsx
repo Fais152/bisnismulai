@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { TrendingUp, Menu, Bell, Search, Sun, Moon, LogOut, User, Settings } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 
@@ -16,7 +15,6 @@ export function Header() {
 
   useEffect(() => {
     setMounted(true);
-    // Fetch session from Supabase via client
     import("@/lib/supabase/client").then(({ createClient }) => {
       const supabase = createClient();
       supabase.auth.getUser().then(({ data }) => {
@@ -24,17 +22,13 @@ export function Header() {
           const email = data.user.email ?? null;
           const name = data.user.user_metadata?.full_name as string | undefined;
           setUserEmail(email);
-          if (name) {
-            setUserInitial(name.charAt(0).toUpperCase());
-          } else if (email) {
-            setUserInitial(email.charAt(0).toUpperCase());
-          }
+          if (name) setUserInitial(name.charAt(0).toUpperCase());
+          else if (email) setUserInitial(email.charAt(0).toUpperCase());
         }
       });
     });
   }, []);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -55,93 +49,139 @@ export function Header() {
     }
   };
 
+  const isDark = mounted && theme === "dark";
+
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/40 glass px-6">
-      <div className="flex md:hidden items-center gap-2">
-        <button 
-          onClick={() => window.dispatchEvent(new CustomEvent('toggle-mobile-menu'))}
-          className="text-muted-foreground hover:text-foreground p-2 -ml-2"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          <span className="font-bold">BisnisMulai</span>
-        </Link>
-      </div>
-
-      <div className="flex-1" />
-
-      <div className="flex items-center gap-4">
-        <form className="hidden md:flex relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <input
-            type="search"
-            placeholder="Cari alat atau panduan..."
-            className="w-64 rounded-full bg-secondary/50 pl-9 pr-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary/50 transition-all"
-          />
-        </form>
-
-        <button onClick={() => alert("Tidak ada notifikasi baru saat ini.")} className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-secondary/80">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive animate-pulse" />
-        </button>
-
+    <header
+      className="sticky top-0 z-30 flex-shrink-0"
+      style={{
+        background: "var(--win-button-face, #C0C0C0)",
+        borderBottom: "2px solid",
+        borderBottomColor: "var(--win-shadow-dark, #404040)",
+      }}
+    >
+      {/* ─── Toolbar Row ─── */}
+      <div className="flex items-center gap-0 px-1 py-1" style={{ borderBottom: "1px solid var(--win-shadow-med, #808080)" }}>
+        {/* Mobile hamburger + brand */}
         <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-secondary/80"
+          onClick={() => window.dispatchEvent(new CustomEvent("toggle-mobile-menu"))}
+          className="md:hidden btn-retro px-2 py-1 mr-1 text-[13px]"
+          title="Menu"
         >
-          {mounted && theme === "dark" ? (
-            <Sun className="h-5 w-5" />
-          ) : (
-            <Moon className="h-5 w-5" />
-          )}
+          ☰
         </button>
+        <Link href="/dashboard" className="md:hidden btn-retro px-2 py-1 mr-2 text-[13px] no-underline text-inherit font-bold">
+          🖥️ BisnisMulai
+        </Link>
 
-        {/* User Avatar + Dropdown */}
-        <div className="relative" ref={dropdownRef}>
+        {/* Nav toolbar buttons — desktop */}
+        <div className="hidden md:flex items-center gap-1">
           <button
-            onClick={() => setDropdownOpen((v) => !v)}
-            className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center hover:ring-2 ring-primary/50 transition-all"
+            onClick={() => window.history.back()}
+            className="btn-retro px-2 py-1 text-[11px]"
+            title="Kembali"
           >
-            <span className="text-sm font-medium text-primary">{userInitial}</span>
+            ◀ Kembali
+          </button>
+          <button
+            onClick={() => window.history.forward()}
+            className="btn-retro px-2 py-1 text-[11px]"
+            title="Maju"
+          >
+            Maju ▶
+          </button>
+          <div className="w-px h-6 mx-1" style={{ background: "var(--win-shadow-med, #808080)" }} />
+          <Link href="/dashboard" className="btn-retro px-2 py-1 text-[11px] no-underline text-inherit">
+            🏠 Home
+          </Link>
+        </div>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Right-side controls */}
+        <div className="flex items-center gap-1">
+          {/* Theme toggle */}
+          <button
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            className="btn-retro px-2 py-1 text-[11px]"
+            title={isDark ? "Light Mode" : "Dark Mode"}
+          >
+            {mounted ? (isDark ? "☀️ Day" : "🌙 Night") : "🌙 Night"}
           </button>
 
-          {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border/50 bg-card shadow-lg shadow-black/20 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="px-4 py-3 border-b border-border/40">
-                <p className="text-xs text-muted-foreground">Masuk sebagai</p>
-                <p className="text-sm font-medium truncate">{userEmail ?? "Memuat..."}</p>
+          {/* Notifications */}
+          <button
+            onClick={() => alert("Tidak ada notifikasi baru saat ini.")}
+            className="btn-retro px-2 py-1 text-[11px] relative"
+            title="Notifikasi"
+          >
+            🔔
+          </button>
+
+          {/* User avatar / dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              id="user-menu-btn"
+              onClick={() => setDropdownOpen(v => !v)}
+              className="btn-retro px-2 py-1 text-[11px] flex items-center gap-1"
+              title="Akun"
+            >
+              <span
+                className="inline-flex items-center justify-center font-bold text-[13px] text-white"
+                style={{
+                  width: 20, height: 20,
+                  background: "#000080",
+                }}
+              >
+                {userInitial}
+              </span>
+              <span className="hidden md:inline">▼</span>
+            </button>
+
+            {dropdownOpen && (
+              <div
+                className="absolute right-0 mt-0.5 z-50 win-panel"
+                style={{ minWidth: 200 }}
+              >
+                <div className="win-titlebar text-[11px]">
+                  <span>👤 Akun Pengguna</span>
+                  <button onClick={() => setDropdownOpen(false)} className="win-control-btn">✕</button>
+                </div>
+                <div className="p-2 text-[11px] bg-[#C0C0C0] dark:bg-[#1A1A1A]">
+                  <div className="win-inset px-2 py-1 mb-2 text-[11px]">
+                    {userEmail ?? "Memuat..."}
+                  </div>
+                  <Link
+                    href="/profil"
+                    onClick={() => setDropdownOpen(false)}
+                    className="block w-full text-left px-2 py-1 text-[13px] no-underline text-inherit hover:bg-[#000080] hover:text-white"
+                  >
+                    👤 Profil Saya
+                  </Link>
+                  <div className="border-t border-[#808080] my-1" />
+                  <button
+                    onClick={handleLogout}
+                    disabled={loggingOut}
+                    className="block w-full text-left px-2 py-1 text-[13px] hover:bg-[#000080] hover:text-white disabled:opacity-50 bg-transparent border-none cursor-pointer"
+                  >
+                    🚪 {loggingOut ? "Keluar..." : "Keluar"}
+                  </button>
+                </div>
               </div>
-              <div className="p-1">
-                <Link
-                  href="/profil"
-                  onClick={() => setDropdownOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary/80 text-foreground transition-colors"
-                >
-                  <User className="h-4 w-4 text-muted-foreground" /> Profil Saya
-                </Link>
-                <button
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    alert("Menu Pengaturan khusus sedang dalam pengembangan. Silakan gunakan menu Profil.");
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary/80 text-foreground transition-colors"
-                >
-                  <Settings className="h-4 w-4 text-muted-foreground" /> Pengaturan
-                </button>
-                <div className="my-1 border-t border-border/40" />
-                <button
-                  onClick={handleLogout}
-                  disabled={loggingOut}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-destructive/10 text-destructive transition-colors disabled:opacity-50"
-                >
-                  <LogOut className="h-4 w-4" /> {loggingOut ? "Keluar..." : "Keluar"}
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* ─── Status Bar Address Row ─── */}
+      <div className="hidden md:flex items-center gap-2 px-2 py-0.5 text-[11px]" style={{ background: "var(--win-button-face, #C0C0C0)" }}>
+        <span className="shrink-0 text-[11px]">🖥️ BisnisMulai Explorer</span>
+        <div className="flex-1" />
+        <span className="win-statusbar-item">Terhubung</span>
+        <span className="win-statusbar-item">
+          {new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+        </span>
       </div>
     </header>
   );
