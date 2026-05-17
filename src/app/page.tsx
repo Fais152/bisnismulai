@@ -21,8 +21,7 @@ export default function Home() {
         </div>
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
           <Link href="#fitur" className="hover:text-primary transition-colors">Fitur</Link>
-          <Link href="#roadmap" className="hover:text-primary transition-colors">Roadmap 4 Fase</Link>
-          <Link href="#konsultasi" className="hover:text-primary transition-colors">Konsultasi</Link>
+          <Link href="#roadmap" className="hover:text-primary transition-colors">Roadmap 6 Fase</Link>
         </nav>
         <div className="flex items-center gap-4">
           <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">
@@ -56,7 +55,7 @@ export default function Home() {
               </span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-              Panduan terstruktur berbasis 4 fase, ekosistem kalkulator bisnis, dan sistem advisory otomatis untuk membantu Anda meminimalisir kegagalan.
+              Panduan terstruktur berbasis 6 fase, ekosistem kalkulator bisnis, dan sistem advisory otomatis untuk membantu Anda meminimalisir kegagalan.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -83,7 +82,7 @@ export default function Home() {
               <div className="text-sm text-muted-foreground">Pengusaha Pemula</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-foreground mb-1">4 Fase</div>
+              <div className="text-3xl font-bold text-foreground mb-1">6 Fase</div>
               <div className="text-sm text-muted-foreground">Roadmap Sistematis</div>
             </div>
             <div>
@@ -156,15 +155,17 @@ export default function Home() {
         <section id="roadmap" className="py-24 container mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center gap-16">
             <div className="flex-1">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-foreground">Roadmap 4 Fase yang Jelas</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-foreground">Roadmap 6 Fase yang Jelas</h2>
               <p className="text-lg text-muted-foreground mb-8">Kami memandu Anda langkah demi langkah. Setiap fase memiliki checklist wajib sebelum Anda bisa lanjut ke tahap berikutnya.</p>
-              
+
               <div className="space-y-6">
                 {[
-                  { phase: "01", title: "Validasi Ide", desc: "Riset pasar dan kompetitor." },
-                  { phase: "02", title: "Bangun Sistem", desc: "HPP, struktur legal, pembukuan." },
-                  { phase: "03", title: "Launch & Akuisisi", desc: "Channel penjualan & 10 pelanggan pertama." },
-                  { phase: "04", title: "Skala & Tumbuh", desc: "KPI, cash flow 6 bulan, ekspansi." }
+                  { phase: "01", title: "Mental Reset", desc: "Bongkar mindset sebelum mulai." },
+                  { phase: "02", title: "Validasi Ide", desc: "Uji ide sebelum modal keluar." },
+                  { phase: "03", title: "Bangun Fondasi", desc: "Sistem sebelum skala." },
+                  { phase: "04", title: "Launch Pertama", desc: "Dapatkan 10 pelanggan pertama." },
+                  { phase: "05", title: "Stabilisasi", desc: "Dari chaos ke sistem yang berulang." },
+                  { phase: "06", title: "Skala", desc: "Tumbuh dengan sengaja, bukan kebetulan." }
                 ].map((item, i) => (
                   <div key={i} className="flex gap-4 items-start">
                     <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 text-sm font-bold text-foreground border border-border">
@@ -178,7 +179,7 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            
+
             <div className="flex-1 relative">
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent blur-3xl rounded-full" />
               <div className="relative bg-card rounded-2xl border border-border/50 shadow-2xl p-6 backdrop-blur-sm">
